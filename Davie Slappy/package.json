@@ -1,0 +1,28 @@
+{
+  "name": "slap-happy",
+  "version": "1.0.0",
+  "description": "Slap Happy — A personalized bubble-popping game for toddlers",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step needed — static HTML/JS app'",
+    "cap:init": "npx cap init 'Slap Happy' com.slaphappy.app --web-dir www",
+    "cap:add:ios": "npx cap add ios",
+    "cap:add:android": "npx cap add android",
+    "cap:copy": "npx cap copy",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
+    "prepare": "mkdir -p www && cp index.html www/ && cp -r js www/js"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "private": true
+}
