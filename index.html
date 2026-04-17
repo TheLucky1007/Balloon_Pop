@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Slap Happy</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#E8F8F5;font-family:-apple-system,BlinkMacSystemFont,sans-serif;}
+  #setup{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#E8F8F5 0%,#FDEBD0 100%);display:flex;flex-direction:column;align-items:center;padding:40px 20px 120px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #setup.hidden{display:none;}
+  #setup h1{font-size:32px;font-weight:600;color:#2C3E50;margin-bottom:6px;}
+  #setup p.sub{font-size:15px;color:#7f8c8d;margin-bottom:24px;text-align:center;line-height:1.5;}
+  .section-label{font-size:13px;font-weight:600;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;width:100%;max-width:400px;margin:18px 0 10px;padding-left:4px;}
+  .family-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:400px;margin-bottom:8px;}
+  .family-card{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative;}
+  .photo-circle{width:80px;height:80px;border-radius:50%;border:3px dashed #ccc;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;transition:border-color .2s,transform .15s;background:rgba(255,255,255,.5);}
+  .photo-circle:active{transform:scale(.95);}
+  .photo-circle.has-photo{border-style:solid;}
+  .photo-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+  .photo-circle .plus{font-size:28px;color:#bbb;font-weight:300;line-height:1;}
+  .photo-circle.has-photo .plus{display:none;}
+  .family-card .name-label{font-size:12px;font-weight:500;color:#2C3E50;text-align:center;}
+  .family-card .nick-label{font-size:11px;font-weight:600;color:#1DD1A1;text-align:center;margin-top:-2px;}
+  .color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;position:absolute;bottom:26px;right:8px;box-shadow:0 1px 3px rgba(0,0,0,.15);cursor:pointer;}
+  .accent-dot{position:absolute;top:-2px;left:6px;font-size:14px;line-height:1;pointer-events:none;}
+  .remove-btn{position:absolute;top:-4px;right:4px;width:22px;height:22px;border-radius:50%;background:#e74c3c;color:#fff;border:none;font-size:13px;line-height:22px;text-align:center;cursor:pointer;display:none;}
+  .family-card.custom .remove-btn{display:block;}
+  .add-card{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+  .add-circle{width:80px;height:80px;border-radius:50%;border:3px dashed #1DD1A1;display:flex;align-items:center;justify-content:center;background:rgba(29,209,161,.08);transition:transform .15s;}
+  .add-circle:active{transform:scale(.95);}
+  .add-circle span{font-size:32px;color:#1DD1A1;font-weight:300;}
+  .add-card .name-label{font-size:12px;font-weight:500;color:#1DD1A1;}
+  .bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:101;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);padding:14px 20px 28px;display:flex;flex-direction:column;align-items:center;gap:10px;border-top:1px solid rgba(0,0,0,.06);}
+  .bottom-bar.hidden{display:none;}
+  .start-btn{background:#1DD1A1;color:#fff;border:none;border-radius:28px;padding:14px 48px;font-size:18px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;width:100%;max-width:320px;}
+  .start-btn:active{transform:scale(.96);background:#10ac84;}
+  .skip-btn{background:none;border:none;color:#7f8c8d;font-size:13px;cursor:pointer;text-decoration:underline;}
+  .saved-note{font-size:12px;color:#1DD1A1;font-weight:500;opacity:0;transition:opacity .3s;margin-top:-4px;}
+  .saved-note.show{opacity:1;}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.hidden{display:none;}
+  .modal-box{background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:360px;text-align:center;max-height:90vh;overflow-y:auto;}
+  .modal-box h2{font-size:20px;font-weight:600;color:#2C3E50;margin-bottom:14px;}
+  .modal-box input[type="text"]{width:100%;padding:10px 14px;border:2px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;outline:none;transition:border-color .2s;margin-bottom:10px;}
+  .modal-box input[type="text"]:focus{border-color:#1DD1A1;}
+  .modal-field-label{font-size:11px;font-weight:600;color:#95a5a6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;text-align:left;}
+  .gender-row{display:flex;gap:10px;margin-bottom:12px;justify-content:center;}
+  .gender-btn{padding:7px 18px;border-radius:20px;border:2px solid #ddd;background:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;color:#2C3E50;}
+  .gender-btn.active{border-color:#1DD1A1;background:#E8F8F5;color:#1DD1A1;}
+  .modal-actions{display:flex;gap:10px;margin-top:14px;}
+  .modal-actions button{flex:1;padding:12px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:transform .1s;}
+  .modal-actions button:active{transform:scale(.97);}
+  .btn-cancel{background:#f0f0f0;color:#7f8c8d;}
+  .btn-add{background:#1DD1A1;color:#fff;}
+  .palette-label{font-size:11px;font-weight:600;color:#95a5a6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .palette-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+  .palette-swatch{width:28px;height:28px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .12s,border-color .15s;}
+  .palette-swatch:active{transform:scale(.9);}
+  .palette-swatch.selected{border-color:#2C3E50;transform:scale(1.15);}
+
+  /* Accent picker in modal — compact */
+  .edit-accent-row{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:12px;}
+  .accent-btn-sm{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.04);border:2px solid transparent;border-radius:8px;padding:4px 8px;cursor:pointer;transition:all .15s;font-size:12px;font-weight:600;color:#2C3E50;min-width:36px;}
+  .accent-btn-sm:active{transform:scale(.95);}
+  .accent-btn-sm.selected{border-color:#1DD1A1;background:#E8F8F5;}
+  .accent-flag-sm{font-size:18px;line-height:1;}
+
+  /* Game */
+  canvas{display:block;width:100%;height:100%;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+  #score{position:fixed;top:16px;left:16px;background:rgba(255,255,255,.75);backdrop-filter:blur(4px);padding:6px 16px;border-radius:20px;font:500 22px -apple-system,sans-serif;color:#2C3E50;pointer-events:none;z-index:10;}
+  #score.hidden{display:none;}
+  #musicBtn{position:fixed;top:16px;right:16px;z-index:10;background:rgba(255,255,255,.75);backdrop-filter:blur(4px);padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;font:500 14px -apple-system,sans-serif;color:#2C3E50;transition:transform .1s;user-select:none;-webkit-user-select:none;}
+  #musicBtn:active{transform:scale(.95);}
+  #musicBtn.hidden{display:none;}
+  #musicIcon{font-size:18px;}
+  #musicLabel{font-size:13px;font-weight:500;}
+  #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:10;transition:opacity .6s;}
+  #splash.hidden{display:none;}
+  #splash h1{font:500 48px -apple-system,sans-serif;color:#2C3E50;}
+  #splash p{font:400 18px -apple-system,sans-serif;color:#7f8c8d;margin-top:10px;}
+  #photoInput{display:none;}
+
+  /* Ad */
+  #adScreen{position:fixed;inset:0;z-index:150;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow:hidden;}
+  #adScreen.hidden{display:none;}
+  .ad-skip{position:absolute;top:20px;right:20px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;z-index:10;transition:background .2s;font-family:-apple-system,sans-serif;}
+  .ad-skip:active{background:rgba(255,255,255,.3);}
+  .ad-label{position:absolute;top:22px;left:20px;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;font-family:-apple-system,sans-serif;}
+  .ad-title-main{font:800 36px -apple-system,sans-serif;color:#fff;text-transform:uppercase;letter-spacing:2px;text-shadow:0 0 30px rgba(100,140,255,.4);}
+  .ad-title-sub{font:600 16px -apple-system,sans-serif;color:#f0c040;letter-spacing:4px;text-transform:uppercase;margin-top:4px;}
+  .ad-tagline{font:400 14px -apple-system,sans-serif;color:rgba(255,255,255,.5);margin-top:12px;font-style:italic;}
+  .ad-cta{margin-top:20px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border:none;border-radius:24px;padding:12px 32px;font:600 15px -apple-system,sans-serif;cursor:pointer;text-transform:uppercase;letter-spacing:1px;box-shadow:0 4px 20px rgba(231,76,60,.4);transition:transform .1s;}
+  .ad-cta:active{transform:scale(.96);}
+
+  /* Themes & settings */
+  .theme-section{width:100%;max-width:400px;margin-top:20px;margin-bottom:10px;}
+  .theme-section-label{font-size:13px;font-weight:600;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-left:4px;}
+  .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .theme-card{background:rgba(255,255,255,.6);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;border:2.5px solid transparent;transition:border-color .2s,transform .1s,background .2s;}
+  .theme-card:active{transform:scale(.97);}
+  .theme-card.selected{border-color:#1DD1A1;background:rgba(29,209,161,.08);}
+  .theme-icons{font-size:22px;line-height:1;display:flex;gap:2px;}
+  .theme-label{font-size:13px;font-weight:600;color:#2C3E50;}
+  .theme-count{font-size:11px;color:#95a5a6;}
+  .accent-row{display:flex;flex-wrap:wrap;gap:8px;width:100%;max-width:400px;}
+  .accent-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.6);border:2.5px solid transparent;border-radius:12px;padding:8px 6px;cursor:pointer;transition:border-color .2s,transform .1s,background .2s;min-width:58px;}
+  .accent-btn:active{transform:scale(.95);}
+  .accent-btn.selected{border-color:#1DD1A1;background:rgba(29,209,161,.08);}
+  .accent-flag{font-size:24px;line-height:1;}
+  .accent-label{font-size:10px;font-weight:600;color:#2C3E50;}
+  .settings-box{background:rgba(255,255,255,.6);border-radius:16px;padding:16px 18px;width:100%;}
+  .setting-row{margin-bottom:14px;}.setting-row:last-child{margin-bottom:0;}
+  .setting-label{font-size:13px;font-weight:600;color:#2C3E50;display:block;margin-bottom:6px;}
+  .setting-input{width:100%;padding:10px 14px;border:2px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;outline:none;transition:border-color .2s;background:#fff;}
+  .setting-input:focus{border-color:#1DD1A1;}
+  .setting-slider-row{display:flex;align-items:center;gap:12px;}
+  .setting-slider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:#ddd;outline:none;}
+  .setting-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#1DD1A1;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  .setting-val{font-size:18px;font-weight:700;color:#1DD1A1;min-width:28px;text-align:center;}
+  .music-picker{display:flex;flex-wrap:wrap;gap:6px;}
+  .music-pick-btn{padding:6px 12px;border-radius:16px;border:2px solid #ddd;background:#fff;font-size:12px;font-weight:600;color:#2C3E50;cursor:pointer;transition:all .15s;}
+  .music-pick-btn:active{transform:scale(.95);}
+  .music-pick-btn.selected{border-color:#1DD1A1;background:#E8F8F5;color:#1DD1A1;}
+  #loading{position:fixed;inset:0;z-index:300;background:linear-gradient(180deg,#E8F8F5 0%,#FDEBD0 100%);display:flex;align-items:center;justify-content:center;}
+  #loading.hidden{display:none;}
+  #loading span{font-size:18px;color:#7f8c8d;}
+</style>
+</head>
+<body>
+
+<div id="loading"><span>Loading family...</span></div>
+
+<div id="setup" class="hidden">
+  <h1>Slap Happy</h1>
+  <p class="sub">Tap a circle to add a photo. Tap a name to add their real name, voice, and accent.<br>Your setup is saved on this device.</p>
+  <div id="familySections"></div>
+</div>
+
+<div class="bottom-bar hidden" id="bottomBar">
+  <button class="start-btn" id="startBtn">Let's Play!</button>
+  <button class="skip-btn" id="skipBtn" style="display:none;"></button>
+  <span class="saved-note" id="savedNote">Saved!</span>
+</div>
+
+<!-- Unified edit/add modal -->
+<div id="editModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="editTitle">Edit</h2>
+    <div id="editNameRow">
+      <div class="modal-field-label">Role / Title</div>
+      <input type="text" id="editName" placeholder="Role (e.g. Sister, Uncle)" maxlength="20" autocomplete="off">
+    </div>
+    <div class="modal-field-label">Name (what the bubble says)</div>
+    <input type="text" id="editNickname" placeholder="Their real name (e.g. Luna, Carlos)" maxlength="20" autocomplete="off">
+    <div class="modal-field-label">Voice</div>
+    <div class="gender-row">
+      <button class="gender-btn active" id="editGF">Female</button>
+      <button class="gender-btn" id="editGM">Male</button>
+    </div>
+    <div class="modal-field-label">Accent / Language</div>
+    <div class="edit-accent-row" id="editAccentRow"></div>
+    <div class="palette-label">Color — light</div>
+    <div class="palette-row" id="editLightPalette"></div>
+    <div class="palette-label">Color — dark</div>
+    <div class="palette-row" id="editDarkPalette"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="editCancel">Cancel</button>
+      <button class="btn-add" id="editConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ad screen -->
+<div id="adScreen" class="hidden">
+  <span class="ad-label">Ad</span>
+  <button class="ad-skip" id="adSkip">Skip <span id="adTimer">30</span></button>
+  <canvas id="adCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+  <div style="position:relative;z-index:2;text-align:center;margin-top:auto;margin-bottom:15%;">
+    <div class="ad-title-main">Cornhole 2</div>
+    <div class="ad-title-sub">Cornhole in Space</div>
+    <div class="ad-tagline">"One small toss for man. One giant hole for mankind."</div>
+    <button class="ad-cta" id="adCta">Coming Soon</button>
+  </div>
+</div>
+
+<canvas id="game"></canvas>
+<div id="score" class="hidden"></div>
+<div id="musicBtn" class="hidden" onclick="window._cycleMusic()">
+  <span id="musicIcon">&#9835;</span>
+  <span id="musicLabel">Off</span>
+</div>
+<div id="splash" class="hidden"><h1>Slap Happy</h1><p>tap the bubbles!</p></div>
+<input type="file" id="photoInput" accept="image/*">
+
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ad.js"></script>
+<script src="js/setup.js"></script>
+
+</body>
+</html>
